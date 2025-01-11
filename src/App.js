@@ -1,8 +1,10 @@
 import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
 import './App.css';
 import { useEffect, useState } from 'react';
 import { ethers } from "ethers";
 import EtherWallet from './artifacts/contracts/EtherWallet.sol/EtherWallet.json'
+import { FormControl } from 'react-bootstrap';
 
 function App() {
   const etherWalletAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3' //get it from hardhat ignition deploy
@@ -25,10 +27,8 @@ function App() {
           etherWalletAddress, EtherWallet.abi, provider
         )
 
-        console.log(contract)
         let scBalance = await contract.balanceOf()
         scBalance = ethers.utils.formatEther(scBalance)
-        console.log('scBalance:', scBalance);
         
         setScBalnce(scBalance)
       } catch (error) {
@@ -53,10 +53,7 @@ function App() {
       let balance = await signer.getBalance()
 
       balance = ethers.utils.formatEther(balance)
-      console.log(account);
-      console.log(balance);
-      
-      
+
       setAccount(account)
       setBalance(balance)
       setIsActive(true)
@@ -79,6 +76,35 @@ function App() {
     }
   }
 
+  //deposit ETH to smart contract wallet
+  const depositToEtherWalletContract = async() => {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const signer = provider.getSigner(account)
+
+      const contract = new ethers.Contract(
+        etherWalletAddress, EtherWallet.abi, signer
+      )
+
+      const transaction = await contract.deposit({
+        value: ethers.utils.parseEther(ethToUseForDeposit)
+      })
+      await transaction.wait()
+
+      let balance = await signer.getBalance()
+      balance = ethers.utils.formatEther(balance)
+      setBalance(balance)
+
+      let scBalance = await contract.balanceOf()
+      scBalance = ethers.utils.formatEther(scBalance)
+      setScBalnce(scBalance)
+    } catch(error) {
+      console.log('Error while depositing ETH to wallet: ', error);
+      
+    }
+
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -94,7 +120,18 @@ function App() {
             </Button>
             <div className='mt-2 mb-2'>Connected Account: {account} </div>
             <div className='mt-2 mb-2'>Balance of Account: {balance} </div>
+            <Form>
+              <Form.Group className='mb-3' controlID='numberInEth'>
+                <FormControl type='text' placeholder='Amount in ETH'
+                  onChange={(e) => setEthToUseForDeposit(e.target.value)} />
+              </Form.Group>
+              <Button variant='primary' onClick={depositToEtherWalletContract} >
+                Deposit to Ether Wallet Smart Contract
+              </Button>
+            </Form>
           </>}
+          <div>Ether Wallet Smart Contract Address: {etherWalletAddress}</div>
+          <div>Ether Wallet Smart Contract Balance: {scBalance}</div>
       </header>
     </div>
   );
