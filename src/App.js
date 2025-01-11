@@ -1,13 +1,43 @@
 import Button from 'react-bootstrap/Button';
 import './App.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ethers } from "ethers";
+import EtherWallet from './artifacts/contracts/EtherWallet.sol/EtherWallet.json'
 
 function App() {
+  const etherWalletAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3' //get it from hardhat ignition deploy
+
+  //Metamask handling
   const [account, setAccount] = useState('')
   const [balance, setBalance] = useState(0)
   const [isActive, setIsActive] = useState(false)
   const [shouldDisable, setShouldDisable] = useState(false) //should disable connect button when connecting
+
+  //EtherWallet Smart Contract handling
+  const [scBalance, setScBalnce] = useState(0)
+  const [ethToUseForDeposit, setEthToUseForDeposit] = useState(0)
+
+  useEffect(() => {
+    async function getEtherWalletBalance() {
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum)
+        const contract = new ethers.Contract(
+          etherWalletAddress, EtherWallet.abi, provider
+        )
+
+        console.log(contract)
+        let scBalance = await contract.balanceOf()
+        scBalance = ethers.utils.formatEther(scBalance)
+        console.log('scBalance:', scBalance);
+        
+        setScBalnce(scBalance)
+      } catch (error) {
+        console.log('Erorr while connecting to Ether smart contract', error);
+        
+      }
+    }
+    getEtherWalletBalance()
+  }, [])
 
   //conenct to metamask wallet
   const connectToMetamask = async() => {
