@@ -19,6 +19,10 @@ function App() {
   const [scBalance, setScBalnce] = useState(0)
   const [ethToUseForDeposit, setEthToUseForDeposit] = useState(0)
 
+  //for withdraw
+  const [withdrawAmount, setWithdrawAMount] = useState(0)
+  const [receiverAdress, setReceiverAddress] = useState(ethers.constants.AddressZero)
+
   useEffect(() => {
     async function getEtherWalletBalance() {
       try {
@@ -105,6 +109,37 @@ function App() {
 
   }
 
+  const withdrawETHfromContract = async() => {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const signer = provider.getSigner(account)
+
+      const contract = new ethers.Contract(
+        etherWalletAddress, EtherWallet.abi, signer
+      )
+      
+      const transaction = await contract.withdraw(
+        receiverAdress,
+        ethers.utils.parseEther(withdrawAmount)
+      )
+      await transaction.wait()
+      setWithdrawAMount(0)
+      setReceiverAddress(ethers.constants.AddressZero)
+
+      let balance = await signer.getBalance()
+      balance = ethers.utils.formatEther(balance)
+      setBalance(balance)
+
+      let scBalance = await contract.balanceOf()
+      scBalance = ethers.utils.formatEther(scBalance)
+      setScBalnce(scBalance)
+    } catch(error) {
+      console.log('Error while withdrawing ETH from wallet: ', error);
+      
+    }
+
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -127,6 +162,17 @@ function App() {
               </Form.Group>
               <Button variant='primary' onClick={depositToEtherWalletContract} >
                 Deposit to Ether Wallet Smart Contract
+              </Button>
+            </Form>
+            <Form>
+              <Form.Group className='mb-3' controlID='numberInEthtoWithdraw'>
+                <FormControl type='text' placeholder='Amount in ETH'
+                  onChange={(e) => setWithdrawAMount(e.target.value)} />
+                <FormControl type='text' placeholder='Address to send to'
+                  onChange={(e) => setReceiverAddress(e.target.value)} />
+              </Form.Group>
+              <Button variant='primary' onClick={withdrawETHfromContract} >
+                Withdraw money from Wallet
               </Button>
             </Form>
           </>}
